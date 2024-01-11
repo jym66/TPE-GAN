@@ -99,8 +99,9 @@ if __name__ == "__main__":
 
     # 数据变换设置
     transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
+        transforms.Resize((128, 128)),  # 首先调整图像大小
+        transforms.ToTensor(),  # 将 PIL 图像转换为浮点型张量并归一化像素值
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
     ])
 
     # 初始化自定义数据集和数据加载器

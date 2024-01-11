@@ -26,20 +26,19 @@ class CustomDataset(Dataset):
 
 
 class RealDataset(Dataset):
-    def __init__(self, directory, transform=None):
+    def __init__(self, directory, thu_directory, transform=None):
         self.directory = directory
         self.transform = transform
+        self.thu_directory = thu_directory
         # 过滤出原始图像的文件名
-        self.images = [file for file in os.listdir(directory) if file.endswith('.jpg') or file.endswith('.png')]
-        # 对应的缩略图文件名
-        self.thu_images = ['reduced_' + file for file in self.images]
+        self.images = [file for file in os.listdir(self.directory) if file.endswith('.jpg')]
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, idx):
         image_path = os.path.join(self.directory, self.images[idx])
-        thu_image_path = os.path.join(self.directory, self.thu_images[idx])
+        thu_image_path = os.path.join(self.thu_directory, self.images[idx])
         image = Image.open(image_path).convert('RGB')
         thu_image = Image.open(thu_image_path).convert('RGB')
         if self.transform:
@@ -51,13 +50,13 @@ class RealDataset(Dataset):
 if __name__ == '__main__':
     # 定义变换
     transform = transforms.Compose([
-        transforms.PILToTensor(),
-        transforms.Resize((128, 128)),  # 调整图像大小
+        transforms.Resize((128, 128)),  # 首先调整图像大小
+        transforms.ToTensor(),  # 将 PIL 图像转换为浮点型张量并归一化像素值
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
     ])
 
     # 实例化数据集
-    dataset = CustomDataset(size=100, transform=transform)
+    dataset = RealDataset('/root/coco_data/val2017/', "/root/coco_data/thumbnail/", transform=transform)
 
     # 使用 DataLoader 加载数据集
     batch_size = 5
