@@ -37,9 +37,11 @@ class RealDataset(Dataset):
     def __getitem__(self, idx):
         image_path = os.path.join(self.directory, self.images[idx])
         image = Image.open(image_path).convert('RGB')
+        thu_image = Image.open("reduced_" + image_path)
         if self.transform:
             image = self.transform(image)
-        return image, idx  # 返回图像和索引（或者您可以返回其他类型的标签）
+            thu_image = self.transform(thu_image)
+        return image, thu_image  # 返回图像和缩略图（或者您可以返回其他类型的标签）
 
 
 if __name__ == '__main__':

@@ -119,15 +119,17 @@ if __name__ == "__main__":
 
     for epoch in range(epochs):
         total_loss_dis, total_loss_enc, total_loss_dec, total_loss_thu = 0, 0, 0, 0
-        for index, (img, label) in enumerate(train_loader):
+        for index, (img, thu_image) in enumerate(train_loader):
             image = img.to(device)
             if index % 5 == 0:
                 # 训练判别器
                 optimizer_Dis.zero_grad()
                 enc_img = encryptor(image)
-                dec_image = decryptor(enc_img)
+                # 生成器生成的图片经过判别器的输出
                 d_enc_image = discriminator(enc_img)
-                d_real_image = discriminator(image)
+                # 真实的图片经过判别器的输出
+                d_real_image = discriminator(thu_image)
+                # 计算判别器损失
                 loss_dis = criterion.DLoss(d_enc_image, d_real_image)
                 loss_dis.backward()
                 optimizer_Dis.step()
@@ -136,8 +138,11 @@ if __name__ == "__main__":
                 # 训练加密和解密网络
                 optimizer_E.zero_grad()
                 optimizer_D.zero_grad()
+                # 加密生成器输出
                 enc_img = encryptor(image)
+                # 解密生成器输出
                 dec_image = decryptor(enc_img)
+                # 生成器生成的图片经过判别器的输出
                 d_enc_image = discriminator(enc_img)
                 loss_enc = criterion.EncLoss(d_enc_image)
                 loss_dec = criterion.DecLoss(dec_image, image)
