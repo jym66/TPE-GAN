@@ -54,19 +54,21 @@ class LThuLoss(nn.Module):
     def __init__(self, kernel_size=128):
         super(LThuLoss, self).__init__()
         self.kernel_size = kernel_size
-        self.kernel = torch.full((1, 3, kernel_size, kernel_size), 1.0 / (kernel_size ** 2))
+        # 初始化卷积核（在forward方法中移动到正确的设备上）
+        self.kernel = torch.full((1, 1, kernel_size, kernel_size), 1.0 / (kernel_size ** 2))
 
     def thumbnail_extraction(self, img):
-        if img.dim() == 2:
-            img = img.unsqueeze(0).unsqueeze(0)
-        thumbnail = F.conv2d(img, self.kernel, stride=self.kernel_size)
+        # 在每次调用时将卷积核移动到img所在的设备
+        device = img.device
+        kernel = self.kernel.to(device)
+        thumbnail = F.conv2d(img, kernel, stride=self.kernel_size)
         return thumbnail
 
     def forward(self, fake_img, real_img):
         real_thumbnail = self.thumbnail_extraction(real_img)
         fake_thumbnail = self.thumbnail_extraction(fake_img)
-        # 计算L1范数，并取整个批次的平均值
         return torch.norm(fake_thumbnail - real_thumbnail, p=1, dim=[1, 2, 3]).mean()
+
 
 
 class TPEGANLoss(nn.Module):

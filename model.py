@@ -91,6 +91,7 @@ class Discriminator(nn.Module):
 if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
     # 超参数设置
     batch_size = 1
     lr = 0.0002
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     ])
 
     # 初始化自定义数据集和数据加载器
-    train_dataset = RealDataset("", transform=transform)
+    train_dataset = RealDataset("/root/coco_data/val2017/", "/root/coco_data/thumbnail/", transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     encryptor = Generator().to(device)
