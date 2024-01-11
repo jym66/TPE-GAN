@@ -5,7 +5,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 from Loss import TPEGANLoss
-from GAN_DataSet import CustomDataset
+from GAN_DataSet import CustomDataset, RealDataset
 
 
 class ResidualBlock(nn.Module):
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     ])
 
     # 初始化自定义数据集和数据加载器
-    train_dataset = CustomDataset(size=10, transform=transform)
+    train_dataset = RealDataset("", transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     encryptor = Generator().to(device)
