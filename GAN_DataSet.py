@@ -1,4 +1,7 @@
+import os
+
 import torch
+from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 from torchvision import transforms
@@ -22,10 +25,28 @@ class CustomDataset(Dataset):
         return image, label
 
 
+class RealDataset(Dataset):
+    def __init__(self, directory, transform=None):
+        self.directory = directory
+        self.transform = transform
+        self.images = [file for file in os.listdir(directory) if file.endswith('.jpg') or file.endswith('.png')]
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        image_path = os.path.join(self.directory, self.images[idx])
+        image = Image.open(image_path).convert('RGB')
+        if self.transform:
+            image = self.transform(image)
+        return image, idx  # 返回图像和索引（或者您可以返回其他类型的标签）
+
+
 if __name__ == '__main__':
     # 定义变换
     transform = transforms.Compose([
-        transforms.Normalize((0.5,), (0.5,))
+        transforms.Resize((128, 128)),  # 调整图像大小
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
     ])
 
     # 实例化数据集
@@ -37,6 +58,6 @@ if __name__ == '__main__':
 
     # 演示一次数据加载
     for images, labels in dataloader:
-        print("Batch of images:", images.shape)  # 打印批次图像的形状
+        print("Batch of images:", images)  # 打印批次图像的形状
         print("Batch of labels:", labels.shape)  # 打印批次标签的形状
         break  # 仅演示一次，所以使用 break
