@@ -99,6 +99,7 @@ if __name__ == "__main__":
 
     # 数据变换设置
     transform = transforms.Compose([
+        transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 

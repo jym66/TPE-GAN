@@ -29,10 +29,10 @@ class RealDataset(Dataset):
     def __init__(self, directory, transform=None):
         self.directory = directory
         self.transform = transform
+        # 过滤出原始图像的文件名
         self.images = [file for file in os.listdir(directory) if file.endswith('.jpg') or file.endswith('.png')]
-        self.thu_images = [file for file in os.listdir(directory) if
-                           (file.startswith("reduced_") and file.endswith('.jpg')) or (
-                                   file.startswith("reduced_") and file.endswith('.png'))]
+        # 对应的缩略图文件名
+        self.thu_images = ['reduced_' + file for file in self.images]
 
     def __len__(self):
         return len(self.images)
@@ -41,16 +41,17 @@ class RealDataset(Dataset):
         image_path = os.path.join(self.directory, self.images[idx])
         thu_image_path = os.path.join(self.directory, self.thu_images[idx])
         image = Image.open(image_path).convert('RGB')
-        thu_image = Image.open(thu_image_path)
+        thu_image = Image.open(thu_image_path).convert('RGB')
         if self.transform:
             image = self.transform(image)
             thu_image = self.transform(thu_image)
-        return image, thu_image  # 返回图像和缩略图（或者您可以返回其他类型的标签）
+        return image, thu_image
 
 
 if __name__ == '__main__':
     # 定义变换
     transform = transforms.Compose([
+        transforms.PILToTensor(),
         transforms.Resize((128, 128)),  # 调整图像大小
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
     ])
