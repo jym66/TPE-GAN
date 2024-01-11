@@ -32,15 +32,16 @@ class RealDataset(Dataset):
         self.images = [file for file in os.listdir(directory) if file.endswith('.jpg') or file.endswith('.png')]
         self.thu_images = [file for file in os.listdir(directory) if
                            (file.startswith("reduced_") and file.endswith('.jpg')) or (
-                                       file.startswith("reduced_") and file.endswith('.png'))]
+                                   file.startswith("reduced_") and file.endswith('.png'))]
 
     def __len__(self):
         return len(self.images)
 
     def __getitem__(self, idx):
         image_path = os.path.join(self.directory, self.images[idx])
+        thu_image_path = os.path.join(self.directory, self.thu_images[idx])
         image = Image.open(image_path).convert('RGB')
-        thu_image = Image.open(image_path)
+        thu_image = Image.open(thu_image_path)
         if self.transform:
             image = self.transform(image)
             thu_image = self.transform(thu_image)
