@@ -199,7 +199,7 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
     discriminator = Discriminator().to(device)
     # 创建优化器实例
     optimizer_e = Adam(encryptor.parameters(), lr=lr)
-    optimizer_dis = Adam(discriminator.parameters(), lr=0.00002)
+    optimizer_dis = Adam(discriminator.parameters(), lr=lr)
     # 定义损失函数
     criterion = nn.BCELoss()
 
