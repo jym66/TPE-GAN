@@ -240,7 +240,7 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
                 # 重新生成加密图片
                 enc_img = encryptor(image)
                 # 生成器生成的图片经过判别器的输出
-                d_enc_image = discriminator(enc_img.detach()).detach()
+                d_enc_image = discriminator(enc_img.detach())
                 loss_enc = criterion.EncLoss(d_enc_image)
                 loss_enc.backward()
                 optimizer_e.step()
