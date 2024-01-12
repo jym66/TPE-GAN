@@ -93,7 +93,7 @@ class Discriminator(nn.Module):
 
 def train_model(train_data_path, thu_data_path, transform, device, model_path="model.pth"):
     batch_size = 64
-    lr = 0.001
+    lr = 0.01
     epochs = 100
     print(f"运行设备 {device}....")
 
