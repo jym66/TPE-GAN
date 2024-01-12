@@ -80,11 +80,6 @@ class TPEGANLoss(nn.Module):
         self.DLoss = LDLoss()
         self.DecLoss = LDecLoss(self.lambda_3)
 
-    # def forward(self, d_fake_img, d_real_img, fake_img, real_img, dec_img):
-    #     return self.EncLoss(d_fake_img) + self.lambda_1 * self.LThuLoss(fake_img,
-    #                                                                     real_img) + self.lambda_2 * self.DecLoss(
-    #         dec_img, real_img) + self.DLoss(d_fake_img, d_real_img)
-
 
 def test_tpe_gan_loss():
     # 初始化模拟的网络输出
