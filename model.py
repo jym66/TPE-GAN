@@ -211,8 +211,8 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
             thu_image = thu_image.to(device)
 
             real_labels = torch.ones_like(discriminator(thu_image))
-            fake_labels = torch.zeros_like(discriminator(thu_image))
-
+            fake_images = encryptor(image)
+            fake_labels = torch.zeros_like(discriminator(fake_images.detach()))
             # 训练判别器
             optimizer_dis.zero_grad()
             outputs_real = discriminator(thu_image)
