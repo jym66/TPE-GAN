@@ -200,10 +200,10 @@ if __name__ == "__main__":
         # 初始化自定义数据集和数据加载器
         test_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
         test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
-        checkpoint = torch.load("model.pth", map_location="cpu")
+        checkpoint = torch.load("model.pth", map_location=device)
         discriminator = Discriminator().to(device)
         discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
-        for img in test_loader:
-            img.to(device)
+        for img, thu in test_loader:
+            img = img.to(device)
             pred = discriminator(img)
             print(pred)
