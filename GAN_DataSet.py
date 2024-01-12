@@ -33,8 +33,8 @@ class RealDataset(Dataset):
         self.images = [file for file in os.listdir(self.directory) if file.endswith('.jpg')]
 
     def __len__(self):
-        return 1280
-        # return len(self.images)
+        # return 1280
+        return len(self.images)
 
     def __getitem__(self, idx):
         image_path = os.path.join(self.directory, self.images[idx])

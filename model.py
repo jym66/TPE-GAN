@@ -202,6 +202,7 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
     optimizer_dis = Adam(discriminator.parameters(), lr=0.00002)
     # 定义损失函数
     criterion = TPEGANLoss().to(device)
+    criterion = nn.BCELoss()
     # 尝试加载模型
     if os.path.isfile(model_path):
         print("加载模型.....")
@@ -222,7 +223,6 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
             image = img.to(device)
             thu_image = thu_image.to(device)
             if index % 20 == 0:
-                print("训练判别器")
                 # 训练判别器
                 optimizer_dis.zero_grad()
                 enc_img = encryptor(image)
@@ -232,8 +232,8 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
                 d_real_image = discriminator(thu_image)
                 # 计算判别器损失
                 loss_dis = criterion.DLoss(d_enc_image, d_real_image)
-                # loss_dis.backward()
-                # optimizer_dis.step()
+                loss_dis.backward()
+                optimizer_dis.step()
                 total_loss_dis += loss_dis.item()
             else:
                 # 训练加密网络
@@ -246,6 +246,90 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
                 loss_enc.backward()
                 optimizer_e.step()
                 total_loss_enc += loss_enc.item()
+
+        # 打印每个周期的平均损失
+        print(f"Epoch {epoch + 1}/{epochs}, "
+              f"Dis Loss: {total_loss_dis / len(train_loader):.4f}, "
+              f"Enc Loss: {total_loss_enc / len(train_loader):.4f}")
+        # 保存模型
+        torch.save({
+            'epoch': epoch,
+            'encryptor_state_dict': encryptor.state_dict(),
+            'discriminator_state_dict': discriminator.state_dict(),
+            'optimizer_E_state_dict': optimizer_e.state_dict(),
+            'optimizer_Dis_state_dict': optimizer_dis.state_dict(),
+            'loss': total_loss_dis,
+        }, f"model.pth")
+
+
+import torch
+import torch.nn as nn
+from torch.optim import Adam
+from torch.utils.data import DataLoader
+
+
+def train_model2(train_data_path, thu_data_path, transform, device, model_path="model.pth"):
+    # 只训练判别器和加密网络
+    batch_size = 64
+    lr = 0.01
+    epochs = 100
+    print(f"运行设备 {device}....")
+
+    # 初始化自定义数据集和数据加载器
+    train_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    # 创建模型
+    encryptor = Generator().to(device)
+    discriminator = Discriminator().to(device)
+    # 创建优化器实例
+    optimizer_e = Adam(encryptor.parameters(), lr=lr)
+    optimizer_dis = Adam(discriminator.parameters(), lr=0.00002)
+    # 定义损失函数
+    criterion = nn.BCELoss()
+
+    # 尝试加载模型
+    if os.path.isfile(model_path):
+        print("加载模型.....")
+        checkpoint = torch.load(model_path)
+        encryptor.load_state_dict(checkpoint['encryptor_state_dict'])
+        discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
+        optimizer_e.load_state_dict(checkpoint['optimizer_E_state_dict'])
+        optimizer_dis.load_state_dict(checkpoint['optimizer_Dis_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        print(f"继续训练 epoch {start_epoch}")
+    else:
+        print("模型加载失败，重新开始训练.....")
+
+    for epoch in range(epochs):
+        total_loss_dis, total_loss_enc = 0, 0
+        for index, (img, thu_image) in enumerate(train_loader):
+            image = img.to(device)
+            thu_image = thu_image.to(device)
+
+            # 训练判别器
+            optimizer_dis.zero_grad()
+            real_labels = torch.ones(thu_image.size(0), 1).to(device)
+            fake_labels = torch.zeros(image.size(0), 1).to(device)
+
+            outputs_real = discriminator(thu_image)
+            loss_real = criterion(outputs_real, real_labels)
+
+            fake_images = encryptor(image)
+            outputs_fake = discriminator(fake_images.detach())
+            loss_fake = criterion(outputs_fake, fake_labels)
+
+            loss_dis = loss_real + loss_fake
+            loss_dis.backward()
+            optimizer_dis.step()
+            total_loss_dis += loss_dis.item()
+
+            # 训练加密网络
+            optimizer_e.zero_grad()
+            outputs_fake_for_gen = discriminator(fake_images)
+            loss_enc = criterion(outputs_fake_for_gen, real_labels)
+            loss_enc.backward()
+            optimizer_e.step()
+            total_loss_enc += loss_enc.item()
 
         # 打印每个周期的平均损失
         print(f"Epoch {epoch + 1}/{epochs}, "
@@ -278,7 +362,7 @@ if __name__ == "__main__":
     ])
 
     if mode == "train":
-        train_model1(train_data_path, thu_data_path, device=device, transform=transform)
+        train_model2(train_data_path, thu_data_path, device=device, transform=transform)
     else:
         # 初始化自定义数据集和数据加载器
         test_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
