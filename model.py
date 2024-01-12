@@ -90,17 +90,11 @@ class Discriminator(nn.Module):
         return out
 
 
-def train_model(train_data_path, thu_data_path, model_path="model.pth"):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def train_model(train_data_path, thu_data_path, transform, device, model_path="model.pth"):
     batch_size = 64
     lr = 0.0002
     epochs = 100
     print(f"运行设备 {device}....")
-    transform = transforms.Compose([
-        transforms.Resize((128, 128)),  # 首先调整图像大小
-        transforms.ToTensor(),  # 将 PIL 图像转换为浮点型张量并归一化像素值
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
-    ])
 
     # 初始化自定义数据集和数据加载器
     train_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
@@ -192,4 +186,24 @@ def train_model(train_data_path, thu_data_path, model_path="model.pth"):
 if __name__ == "__main__":
     train_data_path = "/root/coco_data/val2017"
     thu_data_path = "/root/coco_data/thumbnail"
-    train_model(train_data_path, thu_data_path)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    mode = "test"
+    transform = transforms.Compose([
+        transforms.Resize((128, 128)),  # 首先调整图像大小
+        transforms.ToTensor(),  # 将 PIL 图像转换为浮点型张量并归一化像素值
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
+    ])
+
+    if mode == "train":
+        train_model(train_data_path, thu_data_path, device=device, transform=transform)
+    else:
+        # 初始化自定义数据集和数据加载器
+        test_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
+        test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
+        checkpoint = torch.load("model.pth", map_location="cpu")
+        discriminator = Discriminator().to(device)
+        discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
+        for img in test_loader:
+            img.to(device)
+            pred = discriminator(img)
+            print(pred)
