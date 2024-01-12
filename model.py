@@ -184,9 +184,91 @@ def train_model(train_data_path, thu_data_path, transform, device, model_path="m
         }, f"model.pth")
 
 
+def train_model1(train_data_path, thu_data_path, transform, device, model_path="model.pth"):
+    # 只训练判别器和加密网络
+    batch_size = 64
+    lr = 0.01
+    epochs = 100
+    print(f"运行设备 {device}....")
+
+    # 初始化自定义数据集和数据加载器
+    train_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    # 创建模型
+    encryptor = Generator().to(device)
+    discriminator = Discriminator().to(device)
+    # 创建优化器实例
+    optimizer_e = Adam(encryptor.parameters(), lr=lr)
+    optimizer_dis = Adam(discriminator.parameters(), lr=0.0001)
+    # 定义损失函数
+    criterion = TPEGANLoss().to(device)
+    # 尝试加载模型
+    if os.path.isfile(model_path):
+        print("加载模型.....")
+        checkpoint = torch.load(model_path)
+        encryptor.load_state_dict(checkpoint['encryptor_state_dict'])
+        discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
+        optimizer_e.load_state_dict(checkpoint['optimizer_E_state_dict'])
+        optimizer_dis.load_state_dict(checkpoint['optimizer_Dis_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        print(f"继续训练 epoch {start_epoch}")
+    else:
+        print("模型加载失败，重新开始训练.....")
+
+    for epoch in range(epochs):
+        total_loss_dis, total_loss_enc = 0, 0
+        for index, target in enumerate(train_loader):
+            img, thu_image = target
+            image = img.to(device)
+            thu_image = thu_image.to(device)
+            if index % 10 == 0:
+                # 训练判别器
+                optimizer_dis.zero_grad()
+                enc_img = encryptor(image)
+                # 生成器生成的图片经过判别器的输出
+                d_enc_image = discriminator(enc_img)
+                # 真实的图片经过判别器的输出
+                d_real_image = discriminator(thu_image)
+                # 计算判别器损失
+                loss_dis = criterion.DLoss(d_enc_image, d_real_image)
+                loss_dis.backward()
+                optimizer_dis.step()
+                total_loss_dis += loss_dis.item()
+            else:
+                # 训练加密网络
+                optimizer_e.zero_grad()
+                # 重新生成加密图片
+                enc_img = encryptor(image)
+                # 生成器生成的图片经过判别器的输出
+                d_enc_image = discriminator(enc_img.detach()).detach()
+                loss_enc = criterion.EncLoss(d_enc_image)
+                loss_enc.backward()
+                optimizer_e.step()
+                total_loss_enc += loss_enc.item()
+
+        # 打印每个周期的平均损失
+        print(f"Epoch {epoch + 1}/{epochs}, "
+              f"Dis Loss: {total_loss_dis / len(train_loader):.4f}, "
+              f"Enc Loss: {total_loss_enc / len(train_loader):.4f}")
+        # 保存模型
+        torch.save({
+            'epoch': epoch,
+            'encryptor_state_dict': encryptor.state_dict(),
+            'discriminator_state_dict': discriminator.state_dict(),
+            'optimizer_E_state_dict': optimizer_e.state_dict(),
+            'optimizer_Dis_state_dict': optimizer_dis.state_dict(),
+            'loss': total_loss_dis,
+        }, f"model.pth")
+
+
 if __name__ == "__main__":
-    train_data_path = "/kaggle/input/tpe-gan/val2017"
-    thu_data_path = "/kaggle/input/tpe-gan/thu"
+    if os.path.exists("/kaggle/working"):
+        train_data_path = "/kaggle/input/tpe-gan/val2017"
+        thu_data_path = "/kaggle/input/tpe-gan/thu"
+    else:
+        train_data_path = "/root/coco_data/val2017"
+        thu_data_path = "/root/coco_data/thumbnail"
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     mode = "train"
     transform = transforms.Compose([
@@ -195,7 +277,7 @@ if __name__ == "__main__":
     ])
 
     if mode == "train":
-        train_model(train_data_path, thu_data_path, device=device, transform=transform)
+        train_model1(train_data_path, thu_data_path, device=device, transform=transform)
     else:
         # 初始化自定义数据集和数据加载器
         test_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
