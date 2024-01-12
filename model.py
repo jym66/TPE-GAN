@@ -92,7 +92,7 @@ class Discriminator(nn.Module):
 
 def train_model(train_data_path, thu_data_path, transform, device, model_path="model.pth"):
     batch_size = 64
-    lr = 0.0002
+    lr = 0.01
     epochs = 100
     print(f"运行设备 {device}....")
 
@@ -130,7 +130,7 @@ def train_model(train_data_path, thu_data_path, transform, device, model_path="m
             img, thu_image = target
             image = img.to(device)
             thu_image = thu_image.to(device)
-            if index % 5 == 0:
+            if index % 10 == 0:
                 # 训练判别器
                 optimizer_dis.zero_grad()
                 enc_img = encryptor(image)
@@ -184,14 +184,13 @@ def train_model(train_data_path, thu_data_path, transform, device, model_path="m
 
 
 if __name__ == "__main__":
-    train_data_path = "/root/coco_data/val2017"
-    thu_data_path = "/root/coco_data/thumbnail"
+    train_data_path = "/kaggle/input/tpe-gan/val2017"
+    thu_data_path = "/kaggle/input/tpe-gan/thu"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    mode = "test"
+    mode = "train"
     transform = transforms.Compose([
         transforms.Resize((128, 128)),  # 首先调整图像大小
         transforms.ToTensor(),  # 将 PIL 图像转换为浮点型张量并归一化像素值
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
     ])
 
     if mode == "train":

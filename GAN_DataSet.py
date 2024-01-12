@@ -4,6 +4,8 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+from torchvision.transforms.v2 import ToPILImage
+import matplotlib.pyplot as plt
 
 
 # 定义一个简单的自定义数据集
@@ -33,7 +35,8 @@ class RealDataset(Dataset):
         self.images = [file for file in os.listdir(self.directory) if file.endswith('.jpg')]
 
     def __len__(self):
-        return len(self.images)
+        return 1280
+        # return len(self.images)
 
     def __getitem__(self, idx):
         image_path = os.path.join(self.directory, self.images[idx])
@@ -43,6 +46,10 @@ class RealDataset(Dataset):
         if self.transform:
             image = self.transform(image)
             thu_image = self.transform(thu_image)
+        # to_pil = ToPILImage()
+        # pil_img = to_pil(image)
+        # plt.imshow(pil_img)
+        # plt.show()
         return image, thu_image
 
 
@@ -51,14 +58,13 @@ if __name__ == '__main__':
     transform = transforms.Compose([
         transforms.Resize((128, 128)),  # 首先调整图像大小
         transforms.ToTensor(),  # 将 PIL 图像转换为浮点型张量并归一化像素值
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # 归一化
     ])
 
     # 实例化数据集
     dataset = RealDataset('/root/coco_data/val2017/', "/root/coco_data/thumbnail/", transform=transform)
 
     # 使用 DataLoader 加载数据集
-    batch_size = 5
+    batch_size = 1
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # 演示一次数据加载
