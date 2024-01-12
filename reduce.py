@@ -16,5 +16,5 @@ def reduce_image_quality(path, save_path, quality=5):
 
 # # 替换为您的文件夹路径
 folder_path = '/root/coco_data/val2017/'
-save_path = "/root/coco_data/thumbnail1/"
+save_path = "/root/coco_data/thumbnail/"
 reduce_image_quality(folder_path, save_path)

@@ -1,4 +1,6 @@
 # 定义一个残差块的类，包括两个卷积层和跳跃连接
+import os
+
 import torch
 from torch import nn
 from torch.optim import Adam
@@ -88,17 +90,12 @@ class Discriminator(nn.Module):
         return out
 
 
-if __name__ == "__main__":
-
+def train_model(train_data_path, thu_data_path, model_path="model.pth"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
-    # 超参数设置
     batch_size = 64
     lr = 0.0002
-    beta1 = 0.5
     epochs = 100
-
-    # 数据变换设置
+    print(f"运行设备 {device}....")
     transform = transforms.Compose([
         transforms.Resize((128, 128)),  # 首先调整图像大小
         transforms.ToTensor(),  # 将 PIL 图像转换为浮点型张量并归一化像素值
@@ -106,28 +103,42 @@ if __name__ == "__main__":
     ])
 
     # 初始化自定义数据集和数据加载器
-    train_dataset = RealDataset("/content/val2017/", "/content/thumbnail/", transform=transform)
+    train_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-
+    # 创建模型
     encryptor = Generator().to(device)
     decryptor = Generator().to(device)
     discriminator = Discriminator().to(device)
-
-    # 定义优化器
-    optimizer_E = Adam(encryptor.parameters())
-    optimizer_D = Adam(decryptor.parameters())
-    optimizer_Dis = Adam(discriminator.parameters())
+    # 创建优化器实例
+    optimizer_e = Adam(encryptor.parameters(), lr=lr)
+    optimizer_d = Adam(decryptor.parameters(), lr=lr)
+    optimizer_dis = Adam(discriminator.parameters(), lr=lr)
     # 定义损失函数
     criterion = TPEGANLoss().to(device)
+    # 尝试加载模型
+    if os.path.isfile(model_path):
+        print("加载模型.....")
+        checkpoint = torch.load(model_path)
+        encryptor.load_state_dict(checkpoint['encryptor_state_dict'])
+        decryptor.load_state_dict(checkpoint['decryptor_state_dict'])
+        discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
+        optimizer_e.load_state_dict(checkpoint['optimizer_E_state_dict'])
+        optimizer_d.load_state_dict(checkpoint['optimizer_D_state_dict'])
+        optimizer_dis.load_state_dict(checkpoint['optimizer_Dis_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
+        print(f"继续训练 epoch {start_epoch}")
+    else:
+        print("模型加载失败，重新开始训练.....")
 
     for epoch in range(epochs):
         total_loss_dis, total_loss_enc, total_loss_dec, total_loss_thu = 0, 0, 0, 0
-        for index, (img, thu_image) in enumerate(train_loader):
+        for index, target in enumerate(train_loader):
+            img, thu_image = target
             image = img.to(device)
             thu_image = thu_image.to(device)
             if index % 5 == 0:
                 # 训练判别器
-                optimizer_Dis.zero_grad()
+                optimizer_dis.zero_grad()
                 enc_img = encryptor(image)
                 # 生成器生成的图片经过判别器的输出
                 d_enc_image = discriminator(enc_img)
@@ -136,12 +147,12 @@ if __name__ == "__main__":
                 # 计算判别器损失
                 loss_dis = criterion.DLoss(d_enc_image, d_real_image)
                 loss_dis.backward()
-                optimizer_Dis.step()
+                optimizer_dis.step()
                 total_loss_dis += loss_dis.item()
             else:
                 # 训练加密和解密网络
-                optimizer_E.zero_grad()
-                optimizer_D.zero_grad()
+                optimizer_e.zero_grad()
+                optimizer_d.zero_grad()
                 # 加密生成器输出
                 enc_img = encryptor(image)
                 # 解密生成器输出
@@ -153,8 +164,8 @@ if __name__ == "__main__":
                 loss_thu = criterion.LThuLoss(enc_img, image)
                 total_loss = loss_enc + criterion.lambda_1 * loss_thu + criterion.lambda_2 * loss_dec
                 total_loss.backward()
-                optimizer_E.step()
-                optimizer_D.step()
+                optimizer_e.step()
+                optimizer_d.step()
                 total_loss_enc += loss_enc.item()
                 total_loss_dec += loss_dec.item()
                 total_loss_thu += loss_thu.item()
@@ -165,3 +176,20 @@ if __name__ == "__main__":
               f"Enc Loss: {total_loss_enc / (len(train_loader) * 4 / 5):.4f}, "
               f"Dec Loss: {total_loss_dec / (len(train_loader) * 4 / 5):.4f}, "
               f"Thu Loss: {total_loss_thu / (len(train_loader) * 4 / 5):.4f}")
+        # 保存模型
+        torch.save({
+            'epoch': epoch,
+            'encryptor_state_dict': encryptor.state_dict(),
+            'decryptor_state_dict': decryptor.state_dict(),
+            'discriminator_state_dict': discriminator.state_dict(),
+            'optimizer_E_state_dict': optimizer_e.state_dict(),
+            'optimizer_D_state_dict': optimizer_d.state_dict(),
+            'optimizer_Dis_state_dict': optimizer_dis.state_dict(),
+            'loss': total_loss_dis,
+        }, f"model.pth")
+
+
+if __name__ == "__main__":
+    train_data_path = "/root/coco_data/val2017"
+    thu_data_path = "/root/coco_data/thumbnail"
+    train_model(train_data_path, thu_data_path)

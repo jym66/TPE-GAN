@@ -58,7 +58,6 @@ class LThuLoss(nn.Module):
         self.kernel = torch.full((1, 3, kernel_size, kernel_size), 1.0 / (kernel_size ** 2))
 
     def thumbnail_extraction(self, img):
-        # 在每次调用时将卷积核移动到img所在的设备
         device = img.device
         kernel = self.kernel.to(device)
         thumbnail = F.conv2d(img, kernel, stride=self.kernel_size)
