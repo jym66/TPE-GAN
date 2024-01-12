@@ -221,30 +221,29 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
             img, thu_image = target
             image = img.to(device)
             thu_image = thu_image.to(device)
-            if index % 20 == 0:
-                # 训练判别器
-                optimizer_dis.zero_grad()
-                enc_img = encryptor(image)
-                # 生成器生成的图片经过判别器的输出
-                d_enc_image = discriminator(enc_img)
-                # 真实的图片经过判别器的输出
-                d_real_image = discriminator(thu_image)
-                # 计算判别器损失
-                loss_dis = criterion.DLoss(d_enc_image, d_real_image)
-                loss_dis.backward()
-                optimizer_dis.step()
-                total_loss_dis += loss_dis.item()
-            else:
-                # 训练加密网络
-                optimizer_e.zero_grad()
-                # 重新生成加密图片
-                enc_img = encryptor(image)
-                # 生成器生成的图片经过判别器的输出
-                d_enc_image = discriminator(enc_img.detach())
-                loss_enc = criterion.EncLoss(d_enc_image)
-                loss_enc.backward()
-                optimizer_e.step()
-                total_loss_enc += loss_enc.item()
+
+            optimizer_dis.zero_grad()
+            enc_img = encryptor(image)
+            # 生成器生成的图片经过判别器的输出
+            d_enc_image = discriminator(enc_img)
+            # 真实的图片经过判别器的输出
+            d_real_image = discriminator(thu_image)
+            # 计算判别器损失
+            loss_dis = criterion.DLoss(d_enc_image, d_real_image)
+            loss_dis.backward()
+            optimizer_dis.step()
+            total_loss_dis += loss_dis.item()
+
+            # 训练加密网络
+            optimizer_e.zero_grad()
+            # 重新生成加密图片
+            enc_img = encryptor(image)
+            # 生成器生成的图片经过判别器的输出
+            d_enc_image = discriminator(enc_img.detach())
+            loss_enc = criterion.EncLoss(d_enc_image)
+            loss_enc.backward()
+            optimizer_e.step()
+            total_loss_enc += loss_enc.item()
 
         # 打印每个周期的平均损失
         print(f"Epoch {epoch + 1}/{epochs}, "
