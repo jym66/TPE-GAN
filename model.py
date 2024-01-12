@@ -203,37 +203,39 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
     # 定义损失函数
     criterion = nn.BCELoss()
 
-
     for epoch in range(epochs):
         total_loss_dis, total_loss_enc = 0, 0
-        for img, thu_image in train_loader:
+        for index, (img, thu_image) in enumerate(train_loader):
+
             image = img.to(device)
             thu_image = thu_image.to(device)
 
             real_labels = torch.ones_like(discriminator(thu_image))
             fake_images = encryptor(image)
             fake_labels = torch.zeros_like(discriminator(fake_images.detach()))
-            # 训练判别器
-            optimizer_dis.zero_grad()
-            outputs_real = discriminator(thu_image)
-            loss_real = criterion(outputs_real, real_labels)
+            if index % 5 == 0:
+                # 训练判别器
+                optimizer_dis.zero_grad()
+                outputs_real = discriminator(thu_image)
+                loss_real = criterion(outputs_real, real_labels)
 
-            fake_images = encryptor(image)
-            outputs_fake = discriminator(fake_images.detach())
-            loss_fake = criterion(outputs_fake, fake_labels)
+                fake_images = encryptor(image)
+                outputs_fake = discriminator(fake_images.detach())
+                loss_fake = criterion(outputs_fake, fake_labels)
 
-            loss_dis = loss_real + loss_fake
-            loss_dis.backward()
-            optimizer_dis.step()
-            total_loss_dis += loss_dis.item()
+                loss_dis = loss_real + loss_fake
+                loss_dis.backward()
+                optimizer_dis.step()
+                total_loss_dis += loss_dis.item()
 
-            # 训练加密网络
-            optimizer_e.zero_grad()
-            outputs_fake_for_gen = discriminator(fake_images)
-            loss_enc = criterion(outputs_fake_for_gen, real_labels)
-            loss_enc.backward()
-            optimizer_e.step()
-            total_loss_enc += loss_enc.item()
+            else:
+                # 训练加密网络
+                optimizer_e.zero_grad()
+                outputs_fake_for_gen = discriminator(fake_images)
+                loss_enc = criterion(outputs_fake_for_gen, real_labels)
+                loss_enc.backward()
+                optimizer_e.step()
+                total_loss_enc += loss_enc.item()
 
         # 打印每个周期的平均损失
         print(f"Epoch {epoch + 1}/{epochs}, "
