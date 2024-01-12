@@ -131,7 +131,7 @@ def train_model(train_data_path, thu_data_path, transform, device, model_path="m
             img, thu_image = target
             image = img.to(device)
             thu_image = thu_image.to(device)
-            if index % 15 == 0:
+            if index % 150 == 0:
                 # 训练判别器
                 optimizer_dis.zero_grad()
                 enc_img = encryptor(image)
