@@ -107,7 +107,7 @@ def train_model(train_data_path, thu_data_path, transform, device, model_path="m
     # 创建优化器实例
     optimizer_e = Adam(encryptor.parameters(), lr=lr)
     optimizer_d = Adam(decryptor.parameters(), lr=lr)
-    optimizer_dis = Adam(discriminator.parameters(), lr=lr)
+    optimizer_dis = Adam(discriminator.parameters(), lr=0.0001)
     # 定义损失函数
     criterion = TPEGANLoss().to(device)
     # 尝试加载模型
@@ -131,7 +131,7 @@ def train_model(train_data_path, thu_data_path, transform, device, model_path="m
             img, thu_image = target
             image = img.to(device)
             thu_image = thu_image.to(device)
-            if index % 5 == 0:
+            if index % 15 == 0:
                 # 训练判别器
                 optimizer_dis.zero_grad()
                 enc_img = encryptor(image)
