@@ -283,12 +283,12 @@ if __name__ == "__main__":
         test_dataset = RealDataset(train_data_path, thu_data_path, transform=transform)
         test_loader = DataLoader(test_dataset, batch_size=1, shuffle=True)
         checkpoint = torch.load("model.pth", map_location=device)
+
         discriminator = Discriminator().to(device)
         discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
+
         encryptor = Generator().to(device)
         encryptor.load_state_dict(checkpoint['encryptor_state_dict'])
-        decryptor = Generator().to(device)
-        decryptor.load_state_dict(checkpoint['decryptor_state_dict'])
 
         for img, thu in test_loader:
             img = img.to(device)
@@ -300,28 +300,20 @@ if __name__ == "__main__":
             img_pil = to_pil(thu[0])
             pred_pil = to_pil(pred[0])
 
-            dec_pred = decryptor(pred)
-            dec_pred_pil = to_pil(dec_pred[0])
             # 创建一个带有两个子图的绘图窗口
-            plt.figure(figsize=(15, 5))
-
+            plt.figure(figsize=(10, 5))
             # 显示原始图片
-            plt.subplot(1, 3, 1)
+            plt.subplot(1, 2, 1)
             plt.imshow(img_pil)
             plt.title("Original Image")
             plt.axis('off')
 
             # 显示预测图片
-            plt.subplot(1, 3, 2)
+            plt.subplot(1, 2, 2)
             plt.imshow(pred_pil)
             plt.title("Predicted Image")
             plt.axis('off')
 
-            # 显示解密图片
-            plt.subplot(1, 3, 3)
-            plt.imshow(dec_pred_pil)
-            plt.title("Predicted Image")
-            plt.axis('off')
             # 显示绘图窗口
             plt.show()
             break
