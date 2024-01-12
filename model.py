@@ -312,10 +312,12 @@ def train_model2(train_data_path, thu_data_path, transform, device, model_path="
             fake_labels = torch.zeros(image.size(0), 1).to(device)
 
             outputs_real = discriminator(thu_image)
+            outputs_real = outputs_real.view(outputs_real.size(0), -1)  # 展平操作
             loss_real = criterion(outputs_real, real_labels)
 
             fake_images = encryptor(image)
             outputs_fake = discriminator(fake_images.detach())
+            outputs_fake = outputs_fake.view(outputs_fake.size(0), -1)  # 展平操作
             loss_fake = criterion(outputs_fake, fake_labels)
 
             loss_dis = loss_real + loss_fake
@@ -325,7 +327,9 @@ def train_model2(train_data_path, thu_data_path, transform, device, model_path="
 
             # 训练加密网络
             optimizer_e.zero_grad()
+            # 同样对训练加密器时的输出进行调整
             outputs_fake_for_gen = discriminator(fake_images)
+            outputs_fake_for_gen = outputs_fake_for_gen.view(outputs_fake_for_gen.size(0), -1)
             loss_enc = criterion(outputs_fake_for_gen, real_labels)
             loss_enc.backward()
             optimizer_e.step()
