@@ -232,8 +232,8 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
                 d_real_image = discriminator(thu_image)
                 # 计算判别器损失
                 loss_dis = criterion.DLoss(d_enc_image, d_real_image)
-                loss_dis.backward()
-                optimizer_dis.step()
+                # loss_dis.backward()
+                # optimizer_dis.step()
                 total_loss_dis += loss_dis.item()
             else:
                 # 训练加密网络
