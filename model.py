@@ -93,7 +93,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
     # 超参数设置
-    batch_size = 1
+    batch_size = 64
     lr = 0.0002
     beta1 = 0.5
     epochs = 100
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     ])
 
     # 初始化自定义数据集和数据加载器
-    train_dataset = RealDataset("/root/coco_data/val2017/", "/root/coco_data/thumbnail/", transform=transform)
+    train_dataset = RealDataset("/content/val2017/", "/content/thumbnail/", transform=transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     encryptor = Generator().to(device)
@@ -124,6 +124,7 @@ if __name__ == "__main__":
         total_loss_dis, total_loss_enc, total_loss_dec, total_loss_thu = 0, 0, 0, 0
         for index, (img, thu_image) in enumerate(train_loader):
             image = img.to(device)
+            thu_image = thu_image.to(device)
             if index % 5 == 0:
                 # 训练判别器
                 optimizer_Dis.zero_grad()
@@ -146,7 +147,7 @@ if __name__ == "__main__":
                 # 解密生成器输出
                 dec_image = decryptor(enc_img)
                 # 生成器生成的图片经过判别器的输出
-                d_enc_image = discriminator(enc_img)
+                d_enc_image = discriminator(enc_img.detach())
                 loss_enc = criterion.EncLoss(d_enc_image)
                 loss_dec = criterion.DecLoss(dec_image, image)
                 loss_thu = criterion.LThuLoss(enc_img, image)

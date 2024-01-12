@@ -55,7 +55,7 @@ class LThuLoss(nn.Module):
         super(LThuLoss, self).__init__()
         self.kernel_size = kernel_size
         # 初始化卷积核（在forward方法中移动到正确的设备上）
-        self.kernel = torch.full((1, 1, kernel_size, kernel_size), 1.0 / (kernel_size ** 2))
+        self.kernel = torch.full((1, 3, kernel_size, kernel_size), 1.0 / (kernel_size ** 2))
 
     def thumbnail_extraction(self, img):
         # 在每次调用时将卷积核移动到img所在的设备
@@ -68,7 +68,6 @@ class LThuLoss(nn.Module):
         real_thumbnail = self.thumbnail_extraction(real_img)
         fake_thumbnail = self.thumbnail_extraction(fake_img)
         return torch.norm(fake_thumbnail - real_thumbnail, p=1, dim=[1, 2, 3]).mean()
-
 
 
 class TPEGANLoss(nn.Module):
