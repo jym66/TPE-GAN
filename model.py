@@ -5,9 +5,10 @@ import torch
 from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from torchvision.transforms import transforms
+from torchvision.transforms import transforms, ToPILImage
 from Loss import TPEGANLoss
-from GAN_DataSet import CustomDataset, RealDataset
+from GAN_DataSet import RealDataset
+import matplotlib.pyplot as plt
 
 
 class ResidualBlock(nn.Module):
@@ -92,7 +93,7 @@ class Discriminator(nn.Module):
 
 def train_model(train_data_path, thu_data_path, transform, device, model_path="model.pth"):
     batch_size = 64
-    lr = 0.01
+    lr = 0.001
     epochs = 100
     print(f"运行设备 {device}....")
 
@@ -202,7 +203,43 @@ if __name__ == "__main__":
         checkpoint = torch.load("model.pth", map_location=device)
         discriminator = Discriminator().to(device)
         discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
+        encryptor = Generator().to(device)
+        encryptor.load_state_dict(checkpoint['encryptor_state_dict'])
+        decryptor = Generator().to(device)
+        decryptor.load_state_dict(checkpoint['decryptor_state_dict'])
+
         for img, thu in test_loader:
             img = img.to(device)
-            pred = discriminator(img)
-            print(pred)
+            thu = thu.to(device)
+            pred = encryptor(img)
+            pred = pred.detach()
+
+            to_pil = ToPILImage()
+            img_pil = to_pil(thu[0])
+            pred_pil = to_pil(pred[0])
+
+            dec_pred = decryptor(pred)
+            dec_pred_pil = to_pil(dec_pred[0])
+            # 创建一个带有两个子图的绘图窗口
+            plt.figure(figsize=(15, 5))
+
+            # 显示原始图片
+            plt.subplot(1, 3, 1)
+            plt.imshow(img_pil)
+            plt.title("Original Image")
+            plt.axis('off')
+
+            # 显示预测图片
+            plt.subplot(1, 3, 2)
+            plt.imshow(pred_pil)
+            plt.title("Predicted Image")
+            plt.axis('off')
+
+            # 显示解密图片
+            plt.subplot(1, 3, 3)
+            plt.imshow(dec_pred_pil)
+            plt.title("Predicted Image")
+            plt.axis('off')
+            # 显示绘图窗口
+            plt.show()
+            break
