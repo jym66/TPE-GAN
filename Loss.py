@@ -47,7 +47,7 @@ class LDLoss(torch.nn.Module):
         # 对于真实图片的损失，我们计算1 - D(y)的L2范数
         loss_real = torch.norm(1 - d_real_img, p=2, dim=1).mean()
         # 总损失是假图片和真实图片损失的和
-        return loss_fake + loss_real
+        return loss_fake - loss_real
 
 
 class LThuLoss(nn.Module):
