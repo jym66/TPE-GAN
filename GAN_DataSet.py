@@ -4,8 +4,6 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from torchvision.transforms.v2 import ToPILImage
-import matplotlib.pyplot as plt
 
 
 # 定义一个简单的自定义数据集
