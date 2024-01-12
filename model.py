@@ -201,46 +201,35 @@ def train_model1(train_data_path, thu_data_path, transform, device, model_path="
     optimizer_e = Adam(encryptor.parameters(), lr=lr)
     optimizer_dis = Adam(discriminator.parameters(), lr=0.00002)
     # 定义损失函数
-    criterion = TPEGANLoss().to(device)
-    # 尝试加载模型
-    if os.path.isfile(model_path):
-        print("加载模型.....")
-        checkpoint = torch.load(model_path)
-        encryptor.load_state_dict(checkpoint['encryptor_state_dict'])
-        discriminator.load_state_dict(checkpoint['discriminator_state_dict'])
-        optimizer_e.load_state_dict(checkpoint['optimizer_E_state_dict'])
-        optimizer_dis.load_state_dict(checkpoint['optimizer_Dis_state_dict'])
-        start_epoch = checkpoint['epoch'] + 1
-        print(f"继续训练 epoch {start_epoch}")
-    else:
-        print("模型加载失败，重新开始训练.....")
+    criterion = nn.BCELoss()
 
     for epoch in range(epochs):
         total_loss_dis, total_loss_enc = 0, 0
-        for index, target in enumerate(train_loader):
-            img, thu_image = target
+        for img, thu_image in train_loader:
             image = img.to(device)
             thu_image = thu_image.to(device)
 
+            real_labels = torch.ones(thu_image.size(0), 1).to(device)
+            fake_labels = torch.zeros(image.size(0), 1).to(device)
+
+            # 训练判别器
             optimizer_dis.zero_grad()
-            enc_img = encryptor(image)
-            # 生成器生成的图片经过判别器的输出
-            d_enc_image = discriminator(enc_img)
-            # 真实的图片经过判别器的输出
-            d_real_image = discriminator(thu_image)
-            # 计算判别器损失
-            loss_dis = criterion.DLoss(d_enc_image, d_real_image)
+            outputs_real = discriminator(thu_image).view(-1, 1)
+            loss_real = criterion(outputs_real, real_labels)
+
+            fake_images = encryptor(image)
+            outputs_fake = discriminator(fake_images.detach()).view(-1, 1)
+            loss_fake = criterion(outputs_fake, fake_labels)
+
+            loss_dis = loss_real + loss_fake
             loss_dis.backward()
             optimizer_dis.step()
             total_loss_dis += loss_dis.item()
 
             # 训练加密网络
             optimizer_e.zero_grad()
-            # 重新生成加密图片
-            enc_img = encryptor(image)
-            # 生成器生成的图片经过判别器的输出
-            d_enc_image = discriminator(enc_img.detach())
-            loss_enc = criterion.EncLoss(d_enc_image)
+            outputs_fake_for_gen = discriminator(fake_images).view(-1, 1)
+            loss_enc = criterion(outputs_fake_for_gen, real_labels)
             loss_enc.backward()
             optimizer_e.step()
             total_loss_enc += loss_enc.item()
