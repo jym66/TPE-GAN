@@ -153,7 +153,7 @@ def train_model(train_data_path, thu_data_path, transform, device, model_path="m
                 # 解密生成器输出
                 dec_image = decryptor(enc_img)
                 # 生成器生成的图片经过判别器的输出
-                d_enc_image = discriminator(enc_img.detach())
+                d_enc_image = discriminator(enc_img.detach()).detach()
                 loss_enc = criterion.EncLoss(d_enc_image)
                 loss_dec = criterion.DecLoss(dec_image, image)
                 loss_thu = criterion.LThuLoss(enc_img, image)
